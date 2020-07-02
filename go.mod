@@ -1,3 +1,3 @@
-module github.com/diegommm/csvutil
+module github.com/jszwec/csvutil
 
-go 1.14
+go 1.13
