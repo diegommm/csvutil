@@ -23,9 +23,14 @@ func newEncCache(k typeKey, funcMap map[reflect.Type]reflect.Value, funcs []refl
 	encFields := make([]encField, len(fields))
 
 	for i, f := range fields {
-		fn, err := encodeFn(f.baseType, true, funcMap, funcs)
-		if err != nil {
-			return nil, err
+		var fn encodeFunc
+		if f.baseType.Implements(csvMultiMarshaler) && len(f.tag.name) > 0 {
+			fn = encodeMultiMarshaler(f.tag.name)
+		} else {
+			fn, err = encodeFn(f.baseType, true, funcMap, funcs)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		encFields[i] = encField{

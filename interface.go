@@ -27,3 +27,9 @@ type Unmarshaler interface {
 type Marshaler interface {
 	MarshalCSV() ([]byte, error)
 }
+
+// MultiMarshaler is the interface implemented by types that can marshal
+// themselves into multiple valid strings.
+type MultiMarshaler interface {
+	MarshalCSVMulti(string) ([]byte, error)
+}

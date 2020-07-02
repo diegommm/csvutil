@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	textMarshaler = reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem()
-	csvMarshaler  = reflect.TypeOf((*Marshaler)(nil)).Elem()
+	textMarshaler     = reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem()
+	csvMarshaler      = reflect.TypeOf((*Marshaler)(nil)).Elem()
+	csvMultiMarshaler = reflect.TypeOf((*MultiMarshaler)(nil)).Elem()
 )
 
 var (
@@ -148,6 +149,20 @@ func encodePtrTextMarshaler(buf []byte, v reflect.Value, omitempty bool) ([]byte
 	return fallback(buf, v, omitempty)
 }
 
+func encodeMultiMarshaler(key string) encodeFunc {
+	return func(buf []byte, v reflect.Value, _ bool) ([]byte, error) {
+		if v.Kind() == reflect.Ptr && v.IsNil() {
+			return buf, nil
+		}
+
+		b, err := v.Interface().(MultiMarshaler).MarshalCSVMulti(key)
+		if err != nil {
+			return nil, &MarshalerError{Type: v.Type(), MarshalerType: "MarshalCSV", Err: err}
+		}
+		return append(buf, b...), nil
+	}
+}
+
 func encodeMarshaler(buf []byte, v reflect.Value, _ bool) ([]byte, error) {
 	if v.Kind() == reflect.Ptr && v.IsNil() {
 		return buf, nil
@@ -182,7 +197,7 @@ func encodeBytes(buf []byte, v reflect.Value, _ bool) ([]byte, error) {
 	return buf, nil
 }
 
-func encodeFn(typ reflect.Type, canAddr bool, funcMap map[reflect.Type]reflect.Value, funcs []reflect.Value) (encodeFunc, error) {
+func encodeFn(typ reflect.Type, canAddr bool, funcMap map[reflect.Type]reflect.Value, funcs []reflect.Value, multiKey ...string) (encodeFunc, error) {
 	if v, ok := funcMap[typ]; ok {
 		return encodeFuncValue(v), nil
 	}

@@ -116,54 +116,55 @@ func buildFields(k typeKey) fields {
 				}
 			}
 
-			tag := parseTag(k.tag, sf)
-			if tag.ignore {
-				continue
-			}
-			if f.tag.prefix != "" {
-				tag.prefix += f.tag.prefix
-			}
-
-			ft := sf.Type
-			if ft.Kind() == reflect.Ptr {
-				ft = ft.Elem()
-			}
-
-			newf := field{
-				name:     tag.prefix + tag.name,
-				baseType: sf.Type,
-				typ:      ft,
-				tag:      tag,
-				index:    makeIndex(f.index, i),
-			}
-
-			if sf.Anonymous && ft.Kind() == reflect.Struct && tag.empty {
-				q = append(q, newf)
-				continue
-			}
-
-			if tag.inline && ft.Kind() == reflect.Struct {
-				q = append(q, newf)
-				continue
-			}
-
-			fm.insert(newf)
-
-			// look for duplicate nodes on the same level. Nodes won't be
-			// revisited, so write all fields for the current type now.
-			for _, v := range q {
-				if len(v.index) != depth {
-					break
+			for _, tag := range parseTags(k.tag, sf) {
+				if tag.ignore {
+					continue
 				}
-				if v.typ == f.typ && v.tag.prefix == tag.prefix {
-					// other nodes can have different path.
-					fm.insert(field{
-						name:     tag.prefix + tag.name,
-						baseType: sf.Type,
-						typ:      ft,
-						tag:      tag,
-						index:    makeIndex(v.index, i),
-					})
+				if f.tag.prefix != "" {
+					tag.prefix += f.tag.prefix
+				}
+
+				ft := sf.Type
+				if ft.Kind() == reflect.Ptr {
+					ft = ft.Elem()
+				}
+
+				newf := field{
+					name:     tag.prefix + tag.name,
+					baseType: sf.Type,
+					typ:      ft,
+					tag:      tag,
+					index:    makeIndex(f.index, i),
+				}
+
+				if sf.Anonymous && ft.Kind() == reflect.Struct && tag.empty {
+					q = append(q, newf)
+					continue
+				}
+
+				if tag.inline && ft.Kind() == reflect.Struct {
+					q = append(q, newf)
+					continue
+				}
+
+				fm.insert(newf)
+
+				// look for duplicate nodes on the same level. Nodes won't be
+				// revisited, so write all fields for the current type now.
+				for _, v := range q {
+					if len(v.index) != depth {
+						break
+					}
+					if v.typ == f.typ && v.tag.prefix == tag.prefix {
+						// other nodes can have different path.
+						fm.insert(field{
+							name:     tag.prefix + tag.name,
+							baseType: sf.Type,
+							typ:      ft,
+							tag:      tag,
+							index:    makeIndex(v.index, i),
+						})
+					}
 				}
 			}
 		}
